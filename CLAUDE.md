@@ -58,6 +58,24 @@ docker exec staticpub-garage /garage key list
 
 The `--delete` flag removes files from the bucket that no longer exist in the build directory.
 
+## Mittwald Studio Deployment
+
+Separate files for deploying to Mittwald's Container Hosting (no Traefik needed — Mittwald handles SSL/Ingress):
+
+| File | Purpose |
+|------|---------|
+| `docker-compose.mittwald.yml` | Garage-only stack, map-style env vars, no bind mounts |
+| `garage.mittwald.toml` | Garage config with `root_domain = ".project.space"` for Mittwald domain matching |
+| `Dockerfile.mittwald` | Bakes `garage.mittwald.toml` into the image (Garage has no shell) |
+| `init-mittwald.sh` | One-time setup via SSH (Garage image has no `/bin/sh`, `mw container exec` won't work) |
+| `.env.mittwald` | Mittwald-specific secrets (gitignored) |
+
+**Key differences from local setup:**
+- Image must be built for **linux/amd64** (`docker buildx build --platform linux/amd64`)
+- Garage image has no shell — exec/entrypoint tricks don't work, config must be baked into image
+- `root_domain` must match the Mittwald hostname suffix (`.project.space`), with a bucket alias for the subdomain part (e.g. `p-XXXXX`)
+- Deploy via `mw container port-forward` + `aws s3 sync`
+
 ## SPA Limitation
 
 Garage serves `index.html` for directory requests (`/app1/` -> `/app1/index.html`) but does **not** support catch-all fallback. Deep links like `/app1/dashboard` return 404. Use hash-routing (`/app1/#/route`) or add Nginx with `try_files` if client-side routing is needed.

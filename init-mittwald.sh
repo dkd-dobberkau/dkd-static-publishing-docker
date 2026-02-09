@@ -1,20 +1,38 @@
 #!/bin/bash
 # ============================================================
 # Einmal-Setup fuer Garage auf Mittwald Studio
-# Erstellt Layout, Bucket und API-Key via mw container exec
-# Nutzung: ./init-mittwald.sh <container-name>
-# Beispiel: ./init-mittwald.sh garage
+# Erstellt Layout, Bucket, API-Key und Domain-Alias via SSH
+# Nutzung: ./init-mittwald.sh
+# Voraussetzung: mw login + SSH-Key bei Mittwald hinterlegt
 # ============================================================
 
 set -euo pipefail
 
-CONTAINER_NAME="${1:?Bitte Container-Name angeben (z.B. garage)}"
 BUCKET_NAME="${BUCKET_NAME:-static-publishing}"
 
+# SSH-Verbindungsdaten aus mw CLI ermitteln
+echo "SSH-Verbindungsdaten ermitteln ..."
+SSH_INFO=$(mw container list -o json | python3 -c "
+import sys, json
+containers = json.load(sys.stdin)
+if not containers:
+    print('ERROR: Keine Container gefunden', file=sys.stderr)
+    sys.exit(1)
+c = containers[0]
+print(c['shortId'])
+")
+
+SSH_HOST="ssh.$(mw server list -o json | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['clusterName'])").project.host"
+SSH_USER=$(mw container ssh "${SSH_INFO}" --info 2>&1 | grep username | sed "s/.*'\\(.*\\)'/\\1/")
+
+echo "   Host: ${SSH_HOST}"
+echo "   User: ${SSH_USER}"
+
 garage() {
-  mw container exec "${CONTAINER_NAME}" -- /garage "$@"
+  ssh -i ~/.ssh/id_ed25519 "${SSH_USER}@${SSH_HOST}" /garage "$@"
 }
 
+echo ""
 echo "=== Garage Einmal-Setup (Mittwald) ==="
 echo ""
 
@@ -55,15 +73,25 @@ echo "6. Berechtigung fuer Bucket setzen ..."
 garage bucket allow --read --write --owner "${BUCKET_NAME}" --key deploy-key
 echo "   Berechtigung gesetzt."
 
+# 7. Domain-Alias erstellen
+echo "7. Domain-Alias erstellen ..."
+MITTWALD_HOSTNAME=$(mw domain virtualhost list -o json | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['hostname'])")
+SUBDOMAIN=$(echo "${MITTWALD_HOSTNAME}" | cut -d'.' -f1)
+garage bucket alias "${BUCKET_NAME}" "${SUBDOMAIN}"
+echo "   Alias '${SUBDOMAIN}' fuer Bucket '${BUCKET_NAME}' erstellt."
+
 echo ""
 echo "=== Setup abgeschlossen ==="
 echo ""
-echo "Folgende Werte fuer deploy.sh in die .env eintragen:"
+echo "AWS-Credentials fuer deploy.sh:"
 echo ""
 echo "  AWS_ACCESS_KEY_ID=${ACCESS_KEY}"
 echo "  AWS_SECRET_ACCESS_KEY=${SECRET_KEY}"
 echo ""
 echo "Zum Deployen von lokal (Port-Forward noetig):"
 echo ""
-echo "  mw container port-forward ${CONTAINER_NAME} 3900:3900"
-echo "  ./deploy.sh app1 /pfad/zum/build"
+echo "  mw container port-forward ${SSH_INFO} 3900:3900 --ssh-identity-file ~/.ssh/id_ed25519"
+echo "  AWS_ACCESS_KEY_ID=${ACCESS_KEY} AWS_SECRET_ACCESS_KEY=${SECRET_KEY} ./deploy.sh app1 /pfad/zum/build"
+echo ""
+echo "Erreichbar unter:"
+echo "  https://${MITTWALD_HOSTNAME}/app1/"

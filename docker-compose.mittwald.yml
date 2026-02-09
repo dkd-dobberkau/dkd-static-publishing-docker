@@ -1,18 +1,18 @@
 # ============================================================
 # Docker Compose fuer Mittwald Studio (Container Hosting)
 # Nur Garage — SSL/Ingress uebernimmt Mittwald
+# Custom Image mit eingebetteter garage.toml (olivierdo/garage-staticpub)
 # ============================================================
 
 services:
   garage:
-    image: dxflrs/garage:v2.2.0
+    image: olivierdo/garage-staticpub:v2.2.0
     volumes:
-      - ./garage.toml:/etc/garage.toml:ro
       - garage-meta:/var/lib/garage/meta
       - garage-data:/var/lib/garage/data
     environment:
-      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
-      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
     ports:
       - "3900:3900/tcp"
       - "3902:3902/tcp"

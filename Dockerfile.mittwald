@@ -1,0 +1,2 @@
+FROM dxflrs/garage:v2.2.0
+COPY garage.mittwald.toml /etc/garage.toml
