@@ -1,0 +1,66 @@
+# ============================================================
+# Docker Compose für Static File Publishing
+# Garage (S3-kompatibler Speicher + Webserver) + Traefik (Reverse Proxy + SSL)
+# ============================================================
+
+services:
+  traefik:
+    image: traefik:v3.3
+    container_name: staticpub-traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - traefik-certs:/letsencrypt
+    environment:
+      - ACME_EMAIL=${ACME_EMAIL}
+    restart: unless-stopped
+    networks:
+      - staticpub
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  garage:
+    image: dxflrs/garage:v2.2.0
+    container_name: staticpub-garage
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+      - garage-meta:/var/lib/garage/meta
+      - garage-data:/var/lib/garage/data
+    environment:
+      - GARAGE_RPC_SECRET=${GARAGE_RPC_SECRET}
+      - GARAGE_ADMIN_TOKEN=${GARAGE_ADMIN_TOKEN}
+    labels:
+      # Web-Traffic (s3_web, Port 3902) ueber Traefik
+      - "traefik.enable=true"
+      - "traefik.http.routers.garage-web.rule=Host(`${DOMAIN_NAME}`)"
+      - "traefik.http.routers.garage-web.entrypoints=websecure"
+      - "traefik.http.routers.garage-web.tls.certresolver=letsencrypt"
+      - "traefik.http.services.garage-web.loadbalancer.server.port=3902"
+    # S3 API (Port 3900) nur lokal fuer deploy.sh
+    # Web (Port 3902) lokal fuer Entwicklung ohne Traefik
+    ports:
+      - "127.0.0.1:3900:3900"
+      - "127.0.0.1:3902:3902"
+    restart: unless-stopped
+    networks:
+      - staticpub
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3903/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  traefik-certs:
+  garage-meta:
+  garage-data:
+
+networks:
+  staticpub:
+    driver: bridge
