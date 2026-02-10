@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Static Publishing Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="layout">
+    <header class="header">
+      <div class="header-left">
+        <span class="logo">▦</span>
+        <h1>staticpub<span class="dim">.dkd.de</span></h1>
+      </div>
+      <div class="header-right">
+        <span class="pill">{{ bucket }}</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <!-- Deploy Section -->
+      <section class="deploy-section">
+        <div class="deploy-card" id="deployCard">
+          <div class="deploy-dropzone" id="dropzone">
+            <div class="dropzone-content">
+              <div class="dropzone-icon">↑</div>
+              <p class="dropzone-title">ZIP hierher ziehen oder klicken</p>
+              <p class="dropzone-sub">Ordner als .zip packen, wird als App deployed</p>
+            </div>
+            <input type="file" id="fileInput" accept=".zip" hidden>
+          </div>
+          <div class="deploy-form" id="deployForm" style="display:none">
+            <div class="deploy-file-info">
+              <span class="file-name" id="fileName"></span>
+              <span class="file-size" id="fileSize"></span>
+              <button class="btn-clear" id="clearFile" title="Verwerfen">✕</button>
+            </div>
+            <div class="deploy-options">
+              <div class="input-group">
+                <label for="appName">App-Name</label>
+                <input type="text" id="appName" placeholder="z.B. docs, landing, dashboard"
+                       pattern="[a-z0-9\-]+" spellcheck="false" autocomplete="off">
+                <span class="input-hint">Kleinbuchstaben, Zahlen, Bindestriche</span>
+              </div>
+              <div class="input-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="cleanDeploy" checked>
+                  <span>Bestehende Dateien vorher löschen</span>
+                </label>
+              </div>
+              <button class="btn-deploy" id="deployBtn">Deployen</button>
+            </div>
+          </div>
+          <!-- Progress -->
+          <div class="deploy-progress" id="deployProgress" style="display:none">
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            <p class="progress-text" id="progressText">Wird hochgeladen...</p>
+          </div>
+          <!-- Result -->
+          <div class="deploy-result" id="deployResult" style="display:none">
+            <div class="result-icon" id="resultIcon">✓</div>
+            <p class="result-text" id="resultText"></p>
+            <a class="result-link" id="resultLink" target="_blank" rel="noopener"></a>
+            <button class="btn-reset" id="resetBtn">Weiteres Deployment</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Apps List -->
+      <section class="apps-section">
+        <div class="apps-header">
+          <h2>Deployed Apps</h2>
+          <button class="btn-refresh" id="refreshBtn" title="Aktualisieren">↻</button>
+        </div>
+        <div class="apps-list" id="appsList">
+          <div class="apps-loading">Lade Apps...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal" style="display:none">
+    <div class="modal">
+      <h3>App löschen</h3>
+      <p><strong id="deleteAppName"></strong> wird unwiderruflich gelöscht.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="cancelDelete">Abbrechen</button>
+        <button class="btn-danger" id="confirmDelete">Endgültig löschen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>

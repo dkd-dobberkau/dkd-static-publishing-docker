@@ -18,6 +18,20 @@ services:
       - "3902:3902/tcp"
     restart: unless-stopped
 
+  admin:
+    image: olivierdo/staticpub-admin:latest
+    ports:
+      - "8000:8000/tcp"
+    environment:
+      S3_BUCKET: ${BUCKET_NAME}
+      S3_ENDPOINT: http://garage:3900
+      AWS_REGION: garage
+      DOMAIN: ${DOMAIN_NAME}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      ADMIN_TOKEN: ${ADMIN_TOKEN}
+    restart: unless-stopped
+
 volumes:
   garage-meta:
   garage-data:

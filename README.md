@@ -9,16 +9,19 @@ Internet --> Traefik (SSL/Let's Encrypt, Port 80+443)
                 |
                 +--> Garage s3_web (Port 3902, Static Hosting)
                 |
+                +--> Admin (Port 8000, /admin)
+                |
 localhost:3900 --> Garage S3 API (fuer Deployments)
 ```
 
 - **Traefik** — Reverse Proxy mit automatischen Let's Encrypt SSL-Zertifikaten
 - **Garage** — S3-kompatibler Objektspeicher (~50MB RAM) mit eingebautem Webserver fuer statische Dateien
+- **Admin** — Web-Interface fuer ZIP-basiertes Deployment und App-Verwaltung
 
 ## Voraussetzungen
 
 - Docker und Docker Compose
-- AWS CLI (fuer `aws s3 sync` gegen Garage)
+- AWS CLI (fuer `aws s3 sync` gegen Garage, alternativ Admin-Interface nutzen)
 - Domain mit DNS-Zugriff (A-Record auf den Server)
 
 ## Einrichtung
@@ -26,7 +29,6 @@ localhost:3900 --> Garage S3 API (fuer Deployments)
 ### 1. Konfiguration
 
 ```bash
-cd docker
 cp .env.example .env
 ```
 
@@ -38,6 +40,7 @@ ACME_EMAIL=admin@dkd.de
 GARAGE_RPC_SECRET=$(openssl rand -hex 32)
 GARAGE_ADMIN_TOKEN=$(openssl rand -hex 32)
 BUCKET_NAME=static-publishing
+ADMIN_TOKEN=$(openssl rand -hex 32)  # optional: schuetzt das Admin-Interface
 ```
 
 ### 2. DNS einrichten
@@ -69,15 +72,34 @@ Die ausgegebenen AWS-Credentials in die `.env` eintragen oder als Umgebungsvaria
 
 ### 5. App deployen
 
+Per CLI:
+
 ```bash
 ./deploy.sh app1 /pfad/zum/build
 ```
 
+Oder per Admin-Interface: ZIP-Datei auf `https://<DOMAIN>/admin/` hochladen.
+
+## Admin-Interface
+
+Das Admin-Interface bietet eine Web-Oberflaeche fuer:
+
+- **ZIP-Upload** — Ordner als ZIP packen und per Drag & Drop deployen
+- **App-Uebersicht** — Alle deployed Apps mit Dateianzahl, Groesse und letztem Update
+- **App loeschen** — Apps aus dem S3-Bucket entfernen
+
+Zugang ueber `https://<DOMAIN>/admin/` (mit Traefik) oder `http://localhost:8000` (lokal).
+
+Wenn `ADMIN_TOKEN` gesetzt ist, werden schreibende Operationen (Deploy, Loeschen) per Token geschuetzt. Der Token wird als `X-Admin-Token` Header oder `?token=` Query-Parameter uebergeben.
+
 ## Befehle
 
 ```bash
-# Container starten
+# Alle Services starten (Traefik + Garage + Admin)
 docker compose up -d
+
+# Nur Garage + Admin starten (ohne Traefik/SSL)
+docker compose up -d garage admin
 
 # Container stoppen
 docker compose down
@@ -85,9 +107,9 @@ docker compose down
 # Logs anzeigen
 docker compose logs -f
 docker compose logs -f garage
-docker compose logs -f traefik
+docker compose logs -f admin
 
-# App deployen
+# App deployen (CLI)
 ./deploy.sh <app-name> <build-verzeichnis>
 ./deploy.sh <app-name> <build-verzeichnis> --dry-run
 
@@ -109,7 +131,8 @@ docker exec staticpub-garage /garage key list
 | Webserver | CloudFront | Garage s3_web |
 | SPA index.html | CloudFront Function | Garage `index = "index.html"` |
 | HTTPS | ACM-Zertifikat | Let's Encrypt via Traefik |
-| Deploy | `aws s3 sync` gegen AWS | `aws s3 sync` gegen Garage-Endpoint |
+| Deploy | `aws s3 sync` gegen AWS | `aws s3 sync` gegen Garage oder Admin-ZIP-Upload |
+| Admin-UI | AWS Console | Admin-Container |
 | Cache-Invalidierung | CloudFront Invalidation | Nicht noetig (kein CDN-Cache) |
 
 ## SPA-Routing
@@ -124,10 +147,12 @@ Garage liefert `index.html` automatisch fuer Verzeichnisse (`/app1/` -> `/app1/i
 
 | Datei | Zweck |
 |-------|-------|
-| `docker-compose.yml` | Traefik + Garage Services |
+| `docker-compose.yml` | Traefik + Garage + Admin Services |
+| `docker-compose.mittwald.yml` | Garage + Admin fuer Mittwald Studio |
 | `.env.example` | Konfigurationsvorlage |
 | `garage.toml` | Garage-Konfiguration (S3 API, Web, Admin) |
 | `traefik/traefik.yml` | Traefik-Konfiguration (Let's Encrypt, Docker Provider) |
+| `admin-container/` | Admin-Interface (FastAPI, Dockerfile, Templates) |
 | `init.sh` | Einmal-Setup: Layout, Bucket, Key erstellen |
 | `deploy.sh` | Deploy via `aws s3 sync` gegen Garage |
 
@@ -136,9 +161,33 @@ Garage liefert `index.html` automatisch fuer Verzeichnisse (`/app1/` -> `/app1/i
 Fuer lokale Tests ohne SSL kann Traefik uebersprungen werden:
 
 ```bash
-# Nur Garage starten
-docker compose up -d garage
+# Garage + Admin starten
+docker compose up -d garage admin
+
+# Admin-Interface
+open http://localhost:8000
 
 # Direkt auf Garage-Web zugreifen
 curl http://localhost:3902/app1/
 ```
+
+## Mittwald Studio Deployment
+
+Separate Compose-Datei fuer Mittwald Container Hosting (kein Traefik — SSL/Ingress uebernimmt Mittwald):
+
+```bash
+# Image bauen und pushen
+docker buildx build --platform linux/amd64 -t olivierdo/staticpub-admin:latest ./admin-container
+docker push olivierdo/staticpub-admin:latest
+
+# Auf Mittwald starten
+docker compose -f docker-compose.mittwald.yml up -d
+```
+
+| Datei | Zweck |
+|-------|-------|
+| `docker-compose.mittwald.yml` | Garage + Admin Stack fuer Mittwald |
+| `garage.mittwald.toml` | Garage-Config mit Mittwald `root_domain` |
+| `Dockerfile.mittwald` | Garage-Image mit eingebetteter Config |
+| `init-mittwald.sh` | Einmal-Setup via SSH |
+| `.env.mittwald` | Mittwald-spezifische Secrets |
