@@ -191,5 +191,22 @@ docker compose -f docker-compose.mittwald.yml up -d
 | `docker-compose.mittwald.yml` | Garage + Admin Stack fuer Mittwald |
 | `garage.mittwald.toml` | Garage-Config mit Mittwald `root_domain` |
 | `Dockerfile.mittwald` | Garage-Image mit eingebetteter Config |
-| `init-mittwald.sh` | Einmal-Setup via SSH |
+| `init-mittwald.sh` | Einmal-Setup via SSH (optional: `PUBLIC_DOMAIN` fuer Custom Domain) |
 | `.env.mittwald` | Mittwald-spezifische Secrets |
+
+### Custom Domain auf Mittwald
+
+Wenn eine eigene Domain (z.B. `publiqhub.com`) statt `p-XXXXX.project.space` verwendet werden soll:
+
+1. **Domain in Mittwald buchen** und als Virtual Host auf Port 3902 konfigurieren
+2. **Garage Bucket-Alias setzen** — entweder beim Init oder nachtraeglich:
+
+```bash
+# Beim Init (empfohlen)
+PUBLIC_DOMAIN=publiqhub.com ./init-mittwald.sh
+
+# Nachtraeglich via SSH
+ssh <user>@ssh.<cluster>.project.host /garage bucket alias static-publishing publiqhub.com
+```
+
+Garage nutzt `root_domain = ".project.space"` um aus Hostnamen Bucket-Namen zu extrahieren. Custom Domains matchen dieses Muster nicht und brauchen daher einen expliziten Bucket-Alias.
