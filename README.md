@@ -213,7 +213,13 @@ Garage nutzt `root_domain = ".project.space"` um aus Hostnamen Bucket-Namen zu e
 
 ### Admin-Interface auf Subdomain
 
-Das Admin-Interface kann ueber eine eigene Subdomain erreichbar gemacht werden (z.B. `admin.publiqhub.com`):
+Das Admin-Interface laeuft auf einer eigenen Subdomain (z.B. `admin.publiqhub.com`) statt unter einem Pfad-Prefix. Konfiguration in `.env.mittwald`:
+
+```bash
+ADMIN_DOMAIN=admin.publiqhub.com
+```
+
+Setup auf Mittwald:
 
 ```bash
 # Virtual Host erstellen (Container-ID und Port des Admin-Containers angeben)
