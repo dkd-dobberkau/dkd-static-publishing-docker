@@ -210,3 +210,16 @@ ssh <user>@ssh.<cluster>.project.host /garage bucket alias static-publishing pub
 ```
 
 Garage nutzt `root_domain = ".project.space"` um aus Hostnamen Bucket-Namen zu extrahieren. Custom Domains matchen dieses Muster nicht und brauchen daher einen expliziten Bucket-Alias.
+
+### Admin-Interface auf Subdomain
+
+Das Admin-Interface kann ueber eine eigene Subdomain erreichbar gemacht werden (z.B. `admin.publiqhub.com`):
+
+```bash
+# Virtual Host erstellen (Container-ID und Port des Admin-Containers angeben)
+mw domain virtualhost create \
+  --hostname admin.publiqhub.com \
+  --path-to-container "/:ADMIN_CONTAINER_ID:8000/tcp"
+```
+
+Mittwald erstellt automatisch den DNS-Eintrag und ein TLS-Zertifikat via ACME. Das Admin-Interface ist per HTTP Basic Auth geschuetzt (`ADMIN_USER` / `ADMIN_PASSWORD` aus der `.env`).
