@@ -34,9 +34,9 @@ Admin ist dann unter http://localhost:8000 erreichbar.
 ```bash
 pip install -r requirements.txt
 
-export S3_BUCKET=dkd-static-publishing
+export S3_BUCKET=static-publishing
 export CF_DISTRIBUTION_ID=...
-export DOMAIN=staticpub.dkd.de
+export DOMAIN=static.example.com
 export AWS_REGION=eu-central-1
 
 uvicorn app:app --host 0.0.0.0 --port 8000
@@ -76,8 +76,8 @@ Der Container braucht einen IAM-User oder eine Rolle mit:
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
       "Resource": [
-        "arn:aws:s3:::dkd-static-publishing",
-        "arn:aws:s3:::dkd-static-publishing/*"
+        "arn:aws:s3:::static-publishing",
+        "arn:aws:s3:::static-publishing/*"
       ]
     },
     {

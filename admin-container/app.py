@@ -22,11 +22,11 @@ from fastapi.templating import Jinja2Templates
 # ---------------------------------------------------------------------------
 # Config from environment
 # ---------------------------------------------------------------------------
-S3_BUCKET = os.environ.get("S3_BUCKET", "dkd-static-publishing")
+S3_BUCKET = os.environ.get("S3_BUCKET", "static-publishing")
 S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "")
 CF_DISTRIBUTION_ID = os.environ.get("CF_DISTRIBUTION_ID", "")
 AWS_REGION = os.environ.get("AWS_REGION", "garage")
-DOMAIN = os.environ.get("DOMAIN", "staticpub.dkd.de")
+DOMAIN = os.environ.get("DOMAIN", "static.example.com")
 APP_PREFIX = os.environ.get("APP_PREFIX", "")  # z.B. "/admin" fuer Pfad-basiertes Routing
 ADMIN_USER = os.environ.get("ADMIN_USER", "")
 ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")

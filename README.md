@@ -35,7 +35,7 @@ cp .env.example .env
 `.env` bearbeiten und Werte setzen:
 
 ```bash
-DOMAIN_NAME=staticpub.dkd.de
+DOMAIN_NAME=static.example.com
 ACME_EMAIL=admin@dkd.de
 GARAGE_RPC_SECRET=$(openssl rand -hex 32)
 GARAGE_ADMIN_TOKEN=$(openssl rand -hex 32)
@@ -48,7 +48,7 @@ ADMIN_TOKEN=$(openssl rand -hex 32)  # optional: schuetzt das Admin-Interface
 A-Record fuer die Domain auf die IP des Servers setzen:
 
 ```
-staticpub.dkd.de.  A  <SERVER-IP>
+static.example.com.  A  <SERVER-IP>
 ```
 
 ### 3. Container starten
