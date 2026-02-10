@@ -26,6 +26,7 @@ S3_ENDPOINT = os.environ.get("S3_ENDPOINT", "")
 CF_DISTRIBUTION_ID = os.environ.get("CF_DISTRIBUTION_ID", "")
 AWS_REGION = os.environ.get("AWS_REGION", "garage")
 DOMAIN = os.environ.get("DOMAIN", "staticpub.dkd.de")
+APP_PREFIX = os.environ.get("APP_PREFIX", "")  # z.B. "/admin" fuer Pfad-basiertes Routing
 ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")  # optional simple auth
 
 # ---------------------------------------------------------------------------
@@ -42,7 +43,9 @@ cf = boto3.client("cloudfront") if CF_DISTRIBUTION_ID else None
 # App
 # ---------------------------------------------------------------------------
 app = FastAPI(title="Static Publishing Admin", version="1.0.0")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Statische Dateien unter APP_PREFIX mounten
+app.mount(f"{APP_PREFIX}/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # ---------------------------------------------------------------------------
@@ -166,9 +169,12 @@ def delete_app_from_s3(app_name: str) -> int:
 
 @app.middleware("http")
 async def check_auth(request: Request, call_next):
-    if ADMIN_TOKEN and request.url.path not in ("/health",):
+    health_path = f"{APP_PREFIX}/health"
+    root_path = APP_PREFIX or "/"
+    static_path = f"{APP_PREFIX}/static"
+    if ADMIN_TOKEN and request.url.path not in (health_path,):
         token = request.headers.get("X-Admin-Token") or request.query_params.get("token")
-        if request.method == "GET" and request.url.path in ("/", "/static"):
+        if request.method == "GET" and request.url.path in (root_path, static_path):
             pass  # allow page load, auth checked via JS for mutations
         elif request.method != "GET" and token != ADMIN_TOKEN:
             return JSONResponse({"error": "unauthorized"}, status_code=401)
@@ -179,26 +185,28 @@ async def check_auth(request: Request, call_next):
 # Routes
 # ---------------------------------------------------------------------------
 
-@app.get("/", response_class=HTMLResponse)
+@app.get(f"{APP_PREFIX}/", response_class=HTMLResponse)
+@app.get(f"{APP_PREFIX}", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "domain": DOMAIN,
         "bucket": S3_BUCKET,
+        "prefix": APP_PREFIX,
     })
 
 
-@app.get("/health")
+@app.get(f"{APP_PREFIX}/health")
 async def health():
     return {"status": "ok"}
 
 
-@app.get("/api/apps")
+@app.get(f"{APP_PREFIX}/api/apps")
 async def api_list_apps():
     return {"apps": list_apps()}
 
 
-@app.post("/api/apps/{app_name}/deploy")
+@app.post(f"{APP_PREFIX}/api/apps/{{app_name}}/deploy")
 async def api_deploy(app_name: str, file: UploadFile = File(...), clean: bool = Form(False)):
     """Deploy a zip file as an app. Optionally clean existing files first."""
     if not app_name or "/" in app_name or app_name.startswith("."):
@@ -270,7 +278,7 @@ async def api_deploy(app_name: str, file: UploadFile = File(...), clean: bool = 
     }
 
 
-@app.delete("/api/apps/{app_name}")
+@app.delete(f"{APP_PREFIX}/api/apps/{{app_name}}")
 async def api_delete_app(app_name: str):
     if not app_name or "/" in app_name or app_name.startswith("."):
         raise HTTPException(400, "Invalid app name")
@@ -283,7 +291,7 @@ async def api_delete_app(app_name: str):
     return {"app": app_name, "deleted_files": deleted}
 
 
-@app.post("/api/apps/{app_name}/invalidate")
+@app.post(f"{APP_PREFIX}/api/apps/{{app_name}}/invalidate")
 async def api_invalidate(app_name: str):
     if not cf or not CF_DISTRIBUTION_ID:
         raise HTTPException(400, "CloudFront not configured")

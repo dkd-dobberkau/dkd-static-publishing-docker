@@ -3,6 +3,7 @@
 // ============================================================
 
 const $ = (s) => document.querySelector(s);
+const PREFIX = window.APP_PREFIX || "";
 
 // Elements
 const dropzone = $("#dropzone");
@@ -108,7 +109,7 @@ $("#deployBtn").addEventListener("click", async () => {
   try {
     // Use XMLHttpRequest for progress tracking
     const result = await uploadWithProgress(
-      `/api/apps/${encodeURIComponent(appName)}/deploy`,
+      `${PREFIX}/api/apps/${encodeURIComponent(appName)}/deploy`,
       formData,
       (pct) => {
         $("#progressFill").style.width = pct + "%";
@@ -179,7 +180,7 @@ async function loadApps() {
   appsList.innerHTML = '<div class="apps-loading">Lade Apps...</div>';
 
   try {
-    const res = await fetch("/api/apps");
+    const res = await fetch(`${PREFIX}/api/apps`);
     const data = await res.json();
 
     if (!data.apps || data.apps.length === 0) {
@@ -238,7 +239,7 @@ $("#confirmDelete").addEventListener("click", async () => {
   $("#deleteModal").style.display = "none";
 
   try {
-    const res = await fetch(`/api/apps/${encodeURIComponent(appName)}`, {
+    const res = await fetch(`${PREFIX}/api/apps/${encodeURIComponent(appName)}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -263,7 +264,7 @@ $("#deleteModal").addEventListener("click", (e) => {
 
 window.invalidateApp = async function (appName, btn) {
   try {
-    const res = await fetch(`/api/apps/${encodeURIComponent(appName)}/invalidate`, {
+    const res = await fetch(`${PREFIX}/api/apps/${encodeURIComponent(appName)}/invalidate`, {
       method: "POST",
     });
     if (!res.ok) {
