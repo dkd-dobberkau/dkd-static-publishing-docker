@@ -9,6 +9,7 @@
 set -euo pipefail
 
 BUCKET_NAME="${BUCKET_NAME:-static-publishing}"
+PUBLIC_DOMAIN="${PUBLIC_DOMAIN:-}"
 
 # SSH-Verbindungsdaten aus mw CLI ermitteln
 echo "SSH-Verbindungsdaten ermitteln ..."
@@ -80,6 +81,13 @@ SUBDOMAIN=$(echo "${MITTWALD_HOSTNAME}" | cut -d'.' -f1)
 garage bucket alias "${BUCKET_NAME}" "${SUBDOMAIN}"
 echo "   Alias '${SUBDOMAIN}' fuer Bucket '${BUCKET_NAME}' erstellt."
 
+# 8. Public-Domain-Alias erstellen (optional)
+if [[ -n "${PUBLIC_DOMAIN}" ]]; then
+  echo "8. Public-Domain-Alias erstellen ..."
+  garage bucket alias "${BUCKET_NAME}" "${PUBLIC_DOMAIN}"
+  echo "   Alias '${PUBLIC_DOMAIN}' fuer Bucket '${BUCKET_NAME}' erstellt."
+fi
+
 echo ""
 echo "=== Setup abgeschlossen ==="
 echo ""
@@ -95,3 +103,6 @@ echo "  AWS_ACCESS_KEY_ID=${ACCESS_KEY} AWS_SECRET_ACCESS_KEY=${SECRET_KEY} ./de
 echo ""
 echo "Erreichbar unter:"
 echo "  https://${MITTWALD_HOSTNAME}/app1/"
+if [[ -n "${PUBLIC_DOMAIN}" ]]; then
+  echo "  https://${PUBLIC_DOMAIN}/app1/"
+fi
