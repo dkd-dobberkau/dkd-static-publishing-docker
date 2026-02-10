@@ -88,9 +88,11 @@ Das Admin-Interface bietet eine Web-Oberflaeche fuer:
 - **App-Uebersicht** — Alle deployed Apps mit Dateianzahl, Groesse und letztem Update
 - **App loeschen** — Apps aus dem S3-Bucket entfernen
 
+**App-Naming:** Beim ZIP-Upload wird aus dem Dateinamen automatisch ein App-Name vorgeschlagen (z.B. `Meine App_v2.zip` → `meine-app-v2`). Sonderzeichen werden durch Bindestriche ersetzt, alles wird in Kleinbuchstaben umgewandelt. Der vorgeschlagene Name kann vor dem Deploy im Textfeld angepasst werden.
+
 Zugang ueber `https://<DOMAIN>/admin/` (mit Traefik) oder `http://localhost:8000` (lokal).
 
-Wenn `ADMIN_TOKEN` gesetzt ist, werden schreibende Operationen (Deploy, Loeschen) per Token geschuetzt. Der Token wird als `X-Admin-Token` Header oder `?token=` Query-Parameter uebergeben.
+Wenn `ADMIN_USER` und `ADMIN_PASSWORD` gesetzt sind, wird das Admin-Interface per HTTP Basic Auth geschuetzt.
 
 ## Befehle
 
