@@ -26,12 +26,11 @@ services:
       S3_BUCKET: ${BUCKET_NAME}
       S3_ENDPOINT: http://garage:3900
       AWS_REGION: garage
-      DOMAIN: ${DOMAIN_NAME}
+      DOMAIN: ${ADMIN_DOMAIN}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       ADMIN_USER: ${ADMIN_USER}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      APP_PREFIX: /admin
     restart: unless-stopped
 
 volumes:
