@@ -5,6 +5,7 @@ Single-file FastAPI backend. Run with: uvicorn app:app --host 0.0.0.0 --port 800
 
 import os
 import io
+import secrets
 import zipfile
 import asyncio
 from datetime import datetime, timezone
@@ -14,7 +15,7 @@ import boto3
 from botocore.config import Config as BotoConfig
 from botocore.exceptions import ClientError
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -27,7 +28,8 @@ CF_DISTRIBUTION_ID = os.environ.get("CF_DISTRIBUTION_ID", "")
 AWS_REGION = os.environ.get("AWS_REGION", "garage")
 DOMAIN = os.environ.get("DOMAIN", "staticpub.dkd.de")
 APP_PREFIX = os.environ.get("APP_PREFIX", "")  # z.B. "/admin" fuer Pfad-basiertes Routing
-ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN", "")  # optional simple auth
+ADMIN_USER = os.environ.get("ADMIN_USER", "")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "")
 
 # ---------------------------------------------------------------------------
 # AWS clients
@@ -164,20 +166,36 @@ def delete_app_from_s3(app_name: str) -> int:
 
 
 # ---------------------------------------------------------------------------
-# Auth middleware (optional, token-based)
+# Auth middleware (optional, HTTP Basic Auth)
 # ---------------------------------------------------------------------------
+
+import base64
+
+def _check_basic_auth(request: Request) -> bool:
+    """Prueft HTTP Basic Auth Header. Gibt True zurueck wenn authentifiziert."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Basic "):
+        return False
+    try:
+        decoded = base64.b64decode(auth[6:]).decode("utf-8")
+        user, password = decoded.split(":", 1)
+        return (
+            secrets.compare_digest(user, ADMIN_USER)
+            and secrets.compare_digest(password, ADMIN_PASSWORD)
+        )
+    except Exception:
+        return False
+
 
 @app.middleware("http")
 async def check_auth(request: Request, call_next):
     health_path = f"{APP_PREFIX}/health"
-    root_path = APP_PREFIX or "/"
-    static_path = f"{APP_PREFIX}/static"
-    if ADMIN_TOKEN and request.url.path not in (health_path,):
-        token = request.headers.get("X-Admin-Token") or request.query_params.get("token")
-        if request.method == "GET" and request.url.path in (root_path, static_path):
-            pass  # allow page load, auth checked via JS for mutations
-        elif request.method != "GET" and token != ADMIN_TOKEN:
-            return JSONResponse({"error": "unauthorized"}, status_code=401)
+    if ADMIN_USER and ADMIN_PASSWORD and request.url.path != health_path:
+        if not _check_basic_auth(request):
+            return Response(
+                status_code=401,
+                headers={"WWW-Authenticate": 'Basic realm="Admin"'},
+            )
     return await call_next(request)
 
 

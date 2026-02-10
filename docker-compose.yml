@@ -70,7 +70,8 @@ services:
       - DOMAIN=${DOMAIN_NAME}
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
-      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - ADMIN_USER=${ADMIN_USER}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.admin.rule=Host(`${DOMAIN_NAME}`) && PathPrefix(`/admin`)"

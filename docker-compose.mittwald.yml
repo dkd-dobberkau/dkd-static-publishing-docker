@@ -29,7 +29,8 @@ services:
       DOMAIN: ${DOMAIN_NAME}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
-      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      ADMIN_USER: ${ADMIN_USER}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       APP_PREFIX: /admin
     restart: unless-stopped
 
