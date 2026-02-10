@@ -64,6 +64,20 @@ echo "6. Berechtigung fuer Bucket setzen ..."
 garage bucket allow --read --write --owner "${BUCKET_NAME}" --key deploy-key
 echo "   Berechtigung gesetzt."
 
+# 7. Default-Page deployen
+echo "7. Default-Page deployen ..."
+S3_ENDPOINT="${S3_ENDPOINT:-http://localhost:3900}"
+if [[ -f "${SCRIPT_DIR}/default-page/index.html" ]]; then
+  AWS_ACCESS_KEY_ID="${ACCESS_KEY}" AWS_SECRET_ACCESS_KEY="${SECRET_KEY}" \
+    aws s3 cp "${SCRIPT_DIR}/default-page/index.html" "s3://${BUCKET_NAME}/index.html" \
+      --endpoint-url "${S3_ENDPOINT}" \
+      --content-type "text/html" \
+      --cache-control "public, max-age=60"
+  echo "   Default-Page deployed."
+else
+  echo "   default-page/index.html nicht gefunden, uebersprungen."
+fi
+
 echo ""
 echo "=== Setup abgeschlossen ==="
 echo ""
